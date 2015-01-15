@@ -7,6 +7,5 @@ class Solution:
             n = n^i
         return n
 
-
 if __name__ == '__main__':
     pass
