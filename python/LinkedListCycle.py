@@ -16,21 +16,7 @@ class Solution:
     # @param head, a ListNode
     # @return a boolean
     def hasCycle(self, head):
-        if head is None:
-            return False
-        n = 1
-        tail = head
-        while True:
-            ###
-            cur = head
-            for i in range(n):
-                if tail.next == cur:
-                    return True
-                cur = cur.next
-            n += 1
-            tail = tail.next
-            if tail is None:
-                return False
+        pass
             
 
         
