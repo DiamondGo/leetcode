@@ -28,5 +28,6 @@ class Solution:
         # at idx price start fall
         return curMax - curMin + (self.maxProfit(prices[idx:]) if idx < len(prices) else 0)
 
+
 if __name__ == '__main__':
     pass
