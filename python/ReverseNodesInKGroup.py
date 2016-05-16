@@ -24,49 +24,49 @@ class ListNode:
         self.val = x
         self.next = None
 
+
 class Solution:
     # @param {ListNode} head
     # @param {integer} k
     # @return {ListNode}
     def reverseKGroup(self, head, k):
-        if k < 2:
+        
+        if head is None or head.next is None:
             return head
         
-        first = ListNode(0)
-        first.next = head
-        
-        # point before reverse
-        p = first
-        
-        while p.next is not None and p.next.next is not None:
-            prev = p.next
-            cur = p.next
-            i = 0
-            while cur is not None and i < k -1:
-                tmp = cur.next
-                cur.next = prev
-                prev = cur
-                cur = tmp
-                i += 1
+        def reverseList(node):
+            if node is None or node.next is None or k == 1:
+                return node, node
             
-            if i == k -1: # finish a group
-                tmp = p.next
-                p.next.next = cur
-                p.next = prev
-                p = tmp
-            else:
-                cur = prev.next
-                prev.next = None
-                while cur != p.next:
-                    tmp = cur.next
-                    cur.next = prev
-                    prev = cur
-                    cur = tmp
-                break
-        return first.next           
+            tmp = node.next
+            nhead = ntail = node
+            ntail.next = None
+            
+            while tmp is not None:
+                next = tmp.next
+                tmp.next = nhead
+                nhead = tmp
+                tmp = next
+            
+            return nhead, ntail
         
         
-        
+        i = 1
+        tmp = head
+        while i % k != 0 and tmp != None:
+            tmp = tmp.next
+            i += 1
+            
+        if tmp == None:
+            # not enough 
+            return head
+        else:
+            next = tmp.next
+            tmp.next = None
+            nh, nt = reverseList(head)
+            rest = reverseList(next)[0]
+            nt.next = rest
+            return nh
         
 
 if __name__ == '__main__':
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     
     l = createList([1,2,3,4,5])
     
-    l = Solution().reverseKGroup(l, 4)
+    l = Solution().reverseKGroup(l, 2)
     
     tmp = l
     while tmp is not None:
