@@ -1,6 +1,7 @@
 package main
 
 import "fmt"
+
 /*
 Given a non negative integer number num. For every numbers i in the range 0 ≤ i ≤ num calculate the number of 1's in their binary representation and return them as an array.
 
@@ -17,12 +18,12 @@ Hint:
 You should make use of what you have produced already.
 Divide the numbers in ranges like [2-3], [4-7], [8-15] and so on. And try to generate new range from previous.
 Or does the odd/even status of the number help you in calculating the number of 1s?
- */
+*/
 
 func countBits(num int) []int {
-	bcnt := make([]int, num + 1)
+	bcnt := make([]int, num+1)
 	for i := 1; i <= num; i++ {
-		bcnt[i] = bcnt[i / 2] + (i % 2)
+		bcnt[i] = bcnt[i/2] + (i % 2)
 	}
 	return bcnt
 }
