@@ -698,7 +698,7 @@ C++17 起 `std::pair p{1, 2.0};`、`std::vector v{1,2,3};` 可省略模板实参
 ### Q77. vector 的扩容机制是什么？
 容量不足时重新分配更大的内存（GCC 为 2 倍，MSVC 约 1.5 倍），移动/拷贝元素后释放旧内存，因此 push_back 摊还 O(1)。`reserve` 预分配避免多次扩容；`shrink_to_fit` 请求释放多余容量。
 
-### Q78. vector<bool> 有什么问题？
+### Q78. `vector<bool>` 有什么问题？
 它是按位压缩的特化，`operator[]` 返回代理对象而非 `bool&`，不满足容器要求，不能取元素地址。可用 `vector<char>`、`deque<bool>` 或 `bitset` 代替。
 
 ### Q79. vector、deque、list、forward_list 的区别与选择？
