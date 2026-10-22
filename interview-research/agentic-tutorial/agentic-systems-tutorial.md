@@ -103,6 +103,8 @@ Anthropic 在《Building effective agents》一文里给出了一个很实用的
 
 ### 1.7 动手练习：写一个 30 行的智能体循环
 
+> **先说明一点**：这个练习里的"模型"是一个按剧本回答的假函数（`fake_model`），目的是让你**不花钱、可复现地**看清循环本身。接上真实 Claude 的写法在下一节 1.8，两者的循环结构是一样的。
+
 下面的代码就是上面那个循环。重点看三处：模型只**提议**调用（`tool_call`），**运行时**才真正执行；工具结果被追加回对话；循环有 `max_steps`。
 
 ```python
@@ -182,6 +184,115 @@ if __name__ == "__main__":
 **思考题**
 1. 把 `max_steps` 去掉，换成"当总耗时超过 N 秒就中止"，需要改哪里？为什么墙钟时间比步数更接近真实成本？
 2. 如果同一个工具被连续调用 3 次、参数都一样，应该由谁来发现？（提示：模型自己发现不了——它在循环里。）
+
+### 1.8 接上真实模型：同样的循环，换成真实的 Claude
+
+上面的练习用的是假模型。下面是**同一个循环**接上真实的 Claude（Anthropic Python SDK）。它很短：工具定义约 10 行，循环本身约 20 行。
+
+```python
+"""第 1 章（真实模型版）：用 Anthropic SDK 写一个能真正调用 Claude 的智能体循环。
+
+运行前：pip install anthropic，并设置环境变量 ANTHROPIC_API_KEY。
+注意：这个文件会真实调用 API，会产生费用，所以故意不叫 ch*.py，run_all.py 不会运行它。
+"""
+import json
+
+import anthropic
+
+client = anthropic.Anthropic()                 # 自动从环境变量 ANTHROPIC_API_KEY 读取密钥
+MODEL = "claude-opus-5-5"                      # 想省钱可以换成别的模型 ID
+
+# ---- 1. 工具：一个真正的 Python 函数 + 一份告诉模型"怎么用它"的说明 ----
+ORDERS = {1001: {"status": "已发货", "carrier": "顺丰"}, 1002: {"status": "待付款", "carrier": None}}
+
+
+def get_order(order_id):
+    return ORDERS[order_id]                    # 订单不存在会抛 KeyError——正好演示"错误作为结果返回"
+
+
+TOOL_FUNCS = {"get_order": get_order}
+TOOLS = [{
+    "name": "get_order",
+    "description": "按订单编号查询订单状态和承运商。订单编号必须是整数。",
+    "input_schema": {"type": "object",
+                     "properties": {"order_id": {"type": "integer", "description": "订单编号，例如 1001"}},
+                     "required": ["order_id"]},
+}]
+
+
+# ---- 2. 循环：调用模型 -> 执行它要的工具 -> 把结果喂回去 -> 直到它不再调用工具 ----
+def run_agent(task, max_steps=8):
+    messages = [{"role": "user", "content": task}]
+    for _ in range(max_steps):                                   # 步数上限：第 1 章讲过为什么必须有
+        resp = client.messages.create(model=MODEL, max_tokens=16000, tools=TOOLS, messages=messages)
+        messages.append({"role": "assistant", "content": resp.content})   # 原样追加，不要只取文字
+        if resp.stop_reason == "refusal":                        # 先检查：模型可能拒绝回答
+            return "（模型拒绝了这个请求）"
+        if resp.stop_reason != "tool_use":                       # 没有要调用的工具 = 模型认为做完了
+            return "".join(b.text for b in resp.content if b.type == "text")
+        results = []
+        for block in resp.content:                               # 一轮里可能有多个工具调用
+            if block.type != "tool_use":
+                continue
+            try:                                                 # 由我们的代码执行，不是模型
+                out, is_error = json.dumps(TOOL_FUNCS[block.name](**block.input), ensure_ascii=False), False
+            except Exception as e:                               # 出错也变成结果，让模型有机会处理
+                out, is_error = f"{type(e).__name__}: {e}", True
+            results.append({"type": "tool_result", "tool_use_id": block.id, "content": out, "is_error": is_error})
+        messages.append({"role": "user", "content": results})    # 所有结果放在同一条 user 消息里
+    raise RuntimeError(f"超过 {max_steps} 步仍未结束")
+
+
+if __name__ == "__main__":
+    print(run_agent("订单 1001 和 1003 现在分别是什么状态？"))
+```
+
+运行前需要 `pip install anthropic` 并设置环境变量 `ANTHROPIC_API_KEY`。这个文件会真实调用 API，会产生费用。
+
+**逐段对照**
+
+| 代码里的位置 | 对应的概念 | 为什么这样写 |
+|---|---|---|
+| `TOOLS` 里的 `description` 和 `input_schema` | 告诉模型"有什么工具、怎么用" | 模型只能看到这份说明，写得越清楚，越少传错参数（第 2 章） |
+| `client.messages.create(..., tools=TOOLS, ...)` | 一次模型调用 | 模型**提议**要不要调用工具 |
+| `messages.append({"role": "assistant", "content": resp.content})` | 把模型的回复原样放回对话 | 要放整个 `content`，不要只取文字：里面有 `tool_use` 块，下一步要用；较新的模型还可能带"思考块"，必须原样传回 |
+| `resp.stop_reason != "tool_use"` | 终止条件之一 | 模型没有要调用的工具，说明它认为做完了 |
+| `resp.stop_reason == "refusal"` | 另一种结束方式 | 模型可能拒绝回答，要先检查，否则读不到你期望的内容 |
+| `TOOL_FUNCS[block.name](**block.input)` | 由**你的代码**执行工具 | 模型只是提议；执行权和责任都在运行时（第 2 章） |
+| `except Exception` → `is_error: True` | 错误作为结果返回 | 订单 1003 不存在，模型会读到错误信息并据此回答，而不是整个程序崩溃 |
+| 所有 `tool_result` 放进**同一条** `user` 消息 | 并行工具调用（tool calling）的约定 | 一轮里模型可能同时请求多个调用；每个结果的 `tool_use_id` 要和请求对上 |
+| `for _ in range(max_steps)` 和最后的 `raise` | 步数上限 | 没有上限的循环可能永远不结束（本章 1.3） |
+
+**预期行为**（这是我对运行过程的描述，不是实际输出）：对"订单 1001 和 1003 分别是什么状态"，模型通常会**一次请求两个** `get_order` 调用；1001 返回订单信息，1003 触发 `KeyError`，被包装成 `is_error` 结果；模型拿到后给出最终回答，大意是"1001 已发货（顺丰），1003 查不到"。具体措辞每次不同。
+
+**关于验证**：我没有在这里真实调用 API（没有密钥，也不想替你花钱）。我用一个**假的 SDK** 离线验证了这段循环的逻辑：并行工具调用、错误作为结果、思考块原样保留、步数上限、拒答处理，都符合预期；但它没有经过真实模型的运行，第一次跑时如果有 SDK 版本差异请以官方文档为准。
+
+**这 30 行故意没有的东西**：流式（streaming）输出、重试（retry）和超时（第 5 章）、预算和重复检测（第 11 章）、幂等（idempotency）（第 6 章）、状态持久化（persistence）与崩溃恢复（第 7 章）、追踪（trace）和成本统计（第 14 章）、权限和提示注入（prompt injection）防护（第 12 章）。这正是后面每一章要加的东西，也是"能跑的演示"和"能上生产的系统"之间的距离。
+
+**SDK 自带的写法**：Anthropic 的 Python SDK 还提供一个工具运行器（`client.beta.messages.tool_runner`，配合 `@beta_tool` 装饰器），替你写好了这个循环；官方文档把它标为 beta。学习阶段建议先手写一遍，理解了再用它。
+
+```python
+from anthropic import beta_tool
+
+@beta_tool
+def get_order(order_id: int) -> str:
+    """按订单编号查询订单状态。
+
+    Args:
+        order_id: 订单编号，例如 1001。
+    """
+    return str(ORDERS[order_id])
+
+runner = client.beta.messages.tool_runner(
+    model="claude-opus-5-5", max_tokens=16000,
+    tools=[get_order],
+    messages=[{"role": "user", "content": "订单 1001 现在是什么状态？"}],
+)
+for message in runner:          # 每次迭代是一条模型回复；没有更多工具调用时自动结束
+    print(message)
+```
+
+**动手建议**：把 `ORDERS` 换成你自己的真实数据源（数据库、内部 API），再给它加第二个工具（比如"查物流"），观察模型怎么**自己决定**调用顺序。然后故意把工具的 `description` 写得含糊，看它会不会传错参数。
 
 **对应的面试题**：A1、A2、A11、A12。
 
@@ -2346,6 +2457,9 @@ run   7.0s
 - 检查点：checkpoint
 - 检索：retrieval
 - 审计：audit
+- 工具调用：tool calling
+- 流式：streaming
+- 追踪：trace
 - 记忆：memory
 - 智能体：agent
 - 系统提示：system prompt
@@ -2367,7 +2481,6 @@ run   7.0s
 - 速率限制：rate limit
 - 配额：quota
 - 提示词：prompt
-- 工具调用：tool calling
 - 状态转移：state transition
 - 脱敏：data masking
 - 红队：red teaming
@@ -2382,7 +2495,6 @@ run   7.0s
 - 干运行：dry run
 - 反思：reflection
 - 验证器：verifier
-- 追踪：trace
 - 先规划后执行：plan-and-execute
 - 白名单：allowlist
 - 回归集：regression set
