@@ -10,5 +10,6 @@
 | `agentic-systems-tutorial.epub` | 教程《智能体系统工程：从第一性原理讲起》 |
 | `agentic-tutorial-code.zip` | 教程配套的 14 个可运行示例 |
 | `leetcode-plan.epub` | 根据简历准备的 LeetCode 刷题清单 |
+| `ai-six-topics-knowledge.epub` | RAG、智能体、工具调用、MCP、评测、微调：知识与面试（附两个可运行实验，在 `ai-six-topics/code/`） |
 
 这些文件由 Markdown 源文件生成。源文件有更新时，这里的文件不会自动同步，以源文件为准。
