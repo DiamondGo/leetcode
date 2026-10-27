@@ -1,0 +1,24 @@
+=== A. HPA：目标 CPU 利用率 60%，当前 4 个副本 ===
+  当前平均利用率  50% -> 期望副本 4
+  当前平均利用率  63% -> 期望副本 4
+  当前平均利用率  66% -> 期望副本 5
+  当前平均利用率  90% -> 期望副本 6
+  当前平均利用率 120% -> 期望副本 8
+  当前平均利用率  30% -> 期望副本 2
+  （63% 比值 1.05，落在容忍范围内不动；50% 算出 ceil(3.33)=4，向上取整所以还是 4；利用率是相对 **requests** 算的，没设 requests 就没法用）
+
+=== B. 缩容稳定窗口：流量尖峰过去后，副本不会立刻缩回去 ===
+  每 15 秒一步，副本数: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+  负载骤降后第 285 秒才开始缩容（稳定窗口约 300 秒）
+
+=== C. 滚动更新 ===
+  replicas=10 maxSurge=25%  maxUnavailable=25%  -> 最多同时 13 个，至少 8 个可用
+  replicas=3  maxSurge=25%  maxUnavailable=25%  -> 最多同时 4 个，至少 3 个可用
+  replicas=4  maxSurge=25%  maxUnavailable=25%  -> 最多同时 5 个，至少 3 个可用
+  replicas=10 maxSurge=0    maxUnavailable=1    -> 最多同时 10 个，至少 9 个可用
+  replicas=10 maxSurge=100% maxUnavailable=0    -> 最多同时 20 个，至少 10 个可用
+  （只有 readiness 通过的新 Pod 才算“可用”：readiness 写错会让滚动更新卡住；maxUnavailable=0 + 一个永远不 Ready 的新版本 = 旧版本继续服务，更新停在中间，这是好事。）
+
+=== D. CrashLoopBackOff 重启间隔 ===
+  第 1~8 次重启前等待（秒）: [10, 20, 40, 80, 160, 300, 300, 300] 累计 1210s
+  （容器稳定运行一段时间后退避会重置。CrashLoopBackOff 只是“反复崩溃”的状态，不是原因；先看 kubectl describe pod 的 Last State 和 exit code，再看 kubectl logs --previous。）

@@ -1,0 +1,74 @@
+
+[没有索引]
+  SELECT id FROM orders WHERE user_id=42
+  type=ALL    key=None           rows≈199432  Extra=Using where   平均 31.2 ms
+
+[加了 idx_user]
+  SELECT id FROM orders WHERE user_id=42
+  type=ref    key=idx_user       rows≈40      Extra=Using index   平均 0.4 ms
+
+=== 联合索引与最左前缀 ===
+
+[用到前两列]
+  SELECT id FROM orders WHERE user_id=42 AND status='paid'
+  type=ref    key=idx_user_status_created rows≈1       Extra=Using index   平均 0.4 ms
+
+[跳过最左列 user_id（只查 status）]
+  SELECT id FROM orders WHERE status='paid' AND created_at>'2026-03-01'
+  type=index  key=idx_user_status_created rows≈199432  Extra=Using where; Using index   平均 68.2 ms
+
+=== 让索引失效的常见写法 ===
+
+[正确：字符串列用字符串比较]
+  SELECT id FROM orders WHERE phone='138000012345'
+  type=ref    key=idx_phone      rows≈2       Extra=Using index   平均 0.3 ms
+
+[隐式类型转换：字符串列拿数字比较]
+  SELECT id FROM orders WHERE phone=13800012345
+  type=index  key=idx_phone      rows≈199432  Extra=Using where; Using index   平均 37.3 ms
+
+[在列上套函数]
+  SELECT id FROM orders WHERE DATE(created_at)='2026-03-01'
+  type=index  key=idx_created    rows≈199432  Extra=Using where; Using index   平均 39.8 ms
+
+[改写成范围查询]
+  SELECT id FROM orders WHERE created_at>='2026-03-01' AND created_at<'2026-03-02'
+  type=range  key=idx_created    rows≈1440    Extra=Using where; Using index   平均 3.9 ms
+
+[前导通配符 LIKE '%x']
+  SELECT id FROM orders WHERE phone LIKE '%2345'
+  type=index  key=idx_phone      rows≈199432  Extra=Using where; Using index   平均 48.8 ms
+
+[前缀匹配 LIKE 'x%']
+  SELECT id FROM orders WHERE phone LIKE '1380000123%'
+  type=range  key=idx_phone      rows≈200     Extra=Using where; Using index   平均 0.9 ms
+
+=== 覆盖索引（Using index）与回表 ===
+
+[只查索引里有的列 -> 覆盖索引]
+  SELECT user_id,status FROM orders WHERE user_id=42
+  type=ref    key=idx_user_status_created rows≈40      Extra=Using index   平均 0.4 ms
+
+[多查一个 amount -> 要回表]
+  SELECT user_id,status,amount FROM orders WHERE user_id=42
+  type=ref    key=idx_user       rows≈40      Extra=None   平均 0.9 ms
+
+=== 排序 ===
+
+[ORDER BY 无合适索引 -> filesort]
+  SELECT id FROM orders WHERE status='paid' ORDER BY amount LIMIT 10
+  type=ALL    key=None           rows≈199432  Extra=Using where; Using filesort   平均 46.1 ms
+
+[WHERE 等值 + ORDER BY 命中联合索引后续列]
+  SELECT id FROM orders WHERE user_id=42 AND status='paid' ORDER BY created_at LIMIT 10
+  type=ref    key=idx_user_status_created rows≈1       Extra=Using index   平均 0.4 ms
+
+=== 深分页 ===
+
+[OFFSET 150000]
+  SELECT id,amount FROM orders ORDER BY id LIMIT 10 OFFSET 150000
+  type=index  key=PRIMARY        rows≈150010  Extra=None   平均 30.3 ms
+
+[游标（keyset）：记住上一页最后的 id]
+  SELECT id,amount FROM orders WHERE id>150000 ORDER BY id LIMIT 10
+  type=range  key=PRIMARY        rows≈97542   Extra=Using where   平均 0.6 ms

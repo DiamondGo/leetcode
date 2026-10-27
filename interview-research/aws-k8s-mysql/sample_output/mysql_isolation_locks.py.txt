@@ -1,0 +1,27 @@
+=== A. 不可重复读：REPEATABLE READ 与 READ COMMITTED 的区别 ===
+REPEATABLE READ  A 第一次读到 100，B 提交修改后 A 第二次读到 100
+READ COMMITTED   A 第一次读到 100，B 提交修改后 A 第二次读到 999
+
+=== B. 幻读：快照读看不到，当前读看得到（REPEATABLE READ）===
+A 快照读 count(*)  : 3
+B 插入一行并提交后
+A 快照读 count(*)  : 3 （还是旧快照）
+A 当前读 FOR UPDATE: 4 （读到了最新数据）
+A 能 UPDATE 一行自己“看不见”的数据；更新之后快照读 count(*) = 4
+
+=== C. 间隙锁：A 锁住范围，B 往里插入 ===
+[REPEATABLE READ] A 对 id BETWEEN 2 AND 8 加 FOR UPDATE（实际只有 id=5 这一行）
+   B 插入 id=3（在间隙里）: 被锁住，报错 1205（Lock wait timeout exceeded; …）
+   B 更新 id=1（范围外） : 成功
+   B 插入 id=12（范围外）: 成功
+[READ COMMITTED] A 对 id BETWEEN 2 AND 8 加 FOR UPDATE（实际只有 id=5 这一行）
+   B 插入 id=3（在间隙里）: 成功
+   B 更新 id=1（范围外） : 成功
+   B 插入 id=12（范围外）: 成功
+
+=== D. 没有索引的 WHERE 会锁住整张表（RR 下）===
+A: SELECT ... WHERE name='b' FOR UPDATE（name 无索引，只命中 id=5 一行）
+   B 更新 id=1（和 A 要的行毫无关系）: 被锁住，报错 1205（Lock wait timeout exceeded; …）
+A: SELECT ... WHERE id=5 FOR UPDATE（主键等值）
+   B 更新 id=1: 成功
+   B 更新 id=5: 被锁住，报错 1205（Lock wait timeout exceeded; …）

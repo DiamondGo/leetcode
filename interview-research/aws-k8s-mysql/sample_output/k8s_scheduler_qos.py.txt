@@ -1,0 +1,15 @@
+web-1    QoS=Guaranteed -> Scheduled to n1（候选 ['n1', 'n3']，得分 91）
+web-2    QoS=Burstable  -> Scheduled to n1（候选 ['n1', 'n3']，得分 81）
+batch    QoS=BestEffort -> Scheduled to n3（候选 ['n1', 'n3']，得分 100）
+big      QoS=Burstable  -> Pending: 0/3 nodes are available: 2 Insufficient cpu, 1 node(s) had untolerated taint.
+db       QoS=Burstable  -> Scheduled to n3（候选 ['n3']，得分 50）
+db-2     QoS=Burstable  -> Pending: 0/3 nodes are available: 2 node(s) didn't match Pod's node affinity/selector, 1 Insufficient cpu.
+gpu-job  QoS=Burstable  -> Scheduled to n2（候选 ['n1', 'n2', 'n3']，得分 81）
+
+节点已分配（requests 之和，不是实际用量）：
+  n1: cpu 1000/4000m  mem 1024/8192Mi  taints=[]
+  n2: cpu 1000/4000m  mem 1024/8192Mi  taints=['gpu=true:NoSchedule']
+  n3: cpu 1000/2000m  mem 2048/4096Mi  taints=[]
+
+内存紧张时 kubelet 的驱逐倾向：BestEffort 先于 Burstable 先于 Guaranteed（Burstable 里看超出 requests 的程度）。
+容器内存超过 limit 会被内核 OOM kill（退出码 137）；CPU 超过 limit 只会被限流（throttling），不会被杀。
