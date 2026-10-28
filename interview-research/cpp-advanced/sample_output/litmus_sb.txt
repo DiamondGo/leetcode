@@ -1,0 +1,4 @@
+300000 轮中 r1==0 且 r2==0 的次数：
+  relaxed store / relaxed load : 3714
+  release store / acquire load : 4122   (release/acquire 也不禁止它)
+  seq_cst store / seq_cst load : 0

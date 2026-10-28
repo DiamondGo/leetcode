@@ -1,0 +1,6 @@
+-- 链接顺序 a b --
+a_copy = 1（期望 b_value+1 = 101）
+-- 链接顺序 b a --
+a_copy = 101（期望 b_value+1 = 101）
+-- b 改为 constinit --
+a_copy = 101（期望 b_value+1 = 101）

@@ -1,0 +1,10 @@
+-- ASan+UBSan --
+单线程：use_count=1 alive=1 expired=0
+拷贝后 use_count=2
+释放最后一个强引用后：alive=0 expired=1 lock()=空
+4 个线程各拷贝/lock 十万次后：use_count=1 alive=1
+-- TSan --
+单线程：use_count=1 alive=1 expired=0
+拷贝后 use_count=2
+释放最后一个强引用后：alive=0 expired=1 lock()=空
+4 个线程各拷贝/lock 十万次后：use_count=1 alive=1

@@ -1,0 +1,44 @@
+--1 默认实参静态绑定--
+D1::f(1)
+--2 名字隐藏--
+D2::g(const char*)
+--2b using 声明恢复重载--
+B2::g(int)
+B2::g(double)
+D2b::g(const char*)
+--3 字符串字面量重载--
+h(bool)
+h(const std::string&)
+--4 花括号与圆括号--
+S(int,int)
+S(initializer_list)
+S(initializer_list)
+vector<int> v1(3,4) 大小 3；v2{3,4} 大小 2
+--5 切片--
+按值传递：Animal
+按引用传递：Cat
+--6 有符号与无符号比较--
+-1 < 1u 的结果：0（-1 被转成很大的无符号数）
+v.size() - 1 = 18446744073709551615 （空 vector 上的无符号下溢）
+--7 auto 与花括号--
+auto a = {1}: St16initializer_listIiE；auto b = 1: i
+--8 map::operator[] 会插入--
+只是读了一下，map 大小变成 1
+--9 静态局部变量只初始化一次；同一个调用里多个实参的求值顺序未指定--
+103 102 101
+--10 成员的构造与析构顺序--
+构造 成员a
+构造 成员b
+Holder 构造体
+Holder 析构体
+析构 成员b
+析构 成员a
+--11 数组退化--
+sizeof(arr)=40；传给 int a[10] 参数后 sizeof(a)=8
+--12 vector<bool> 不是容器--
+auto x = vb[0]; 然后 vb[0]=false；x 现在是 0（x 是代理对象，仍然引用着 vector 里的那一位）
+--13 临时对象的生命周期--
+临时对象被延长生命周期
+-- 同一个程序用 clang++ 编译，第 9 项 --
+--9 静态局部变量只初始化一次；同一个调用里多个实参的求值顺序未指定--
+101 102 103

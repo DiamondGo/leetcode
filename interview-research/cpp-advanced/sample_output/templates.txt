@@ -1,0 +1,14 @@
+twice(21)=42  twice(1.5)=3.0  old_twice(4)=8  count_of(vector)=5
+describe: pointer | integer 7 | sized container of 3 | other
+sum(1,2,3,4)=10  g_table=144
+Dog
+is_lvalue_deduced(a)=1  (cr)=1  (7)=0  (std::move(a))=0
+[integer 1] [sized container of 2] [other] 
+--- concept 约束不满足的报错 ---
+concept_error.cpp: In function 'int main()':
+concept_error.cpp:5:26: error: no matching function for call to 'twice(std::string)'
+concept_error.cpp:4:30: note: candidate: 'template<class T>  requires  integral<T> T twice(T)'
+concept_error.cpp:4:30: note:   template argument deduction/substitution failed:
+--- 无约束模板误用：诊断总行数 ---
+112
+no_concept_error.cpp: In function 'int main()':

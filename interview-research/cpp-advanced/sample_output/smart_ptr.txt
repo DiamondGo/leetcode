@@ -1,0 +1,17 @@
+== 大小 ==
+sizeof(Widget*)=8  unique_ptr<W>=8  unique_ptr<W,无捕获lambda>=8  unique_ptr<W,函数指针>=16  unique_ptr<W,std::function>=40
+shared_ptr<W>=16  weak_ptr<W>=16 （一个指向对象，一个指向控制块）
+== 分配次数 ==
+shared_ptr<W>(new W)      : 2 次堆分配
+make_shared<W>()          : 1 次堆分配（对象和控制块一起）
+make_unique<W>()          : 1 次堆分配
+== 循环引用泄漏 ==
+shared_ptr 成环：两个 Node 离开作用域后析构了 0 个（泄漏）
+一边改成 weak_ptr：析构了 2 个（正常）
+== make_shared 与 weak_ptr：内存什么时候真正释放 ==
+最后一个 shared_ptr 销毁后，对象已析构(live=0)。注意：make_shared 把对象和控制块放在同一块内存里，只要还有 weak_ptr，这块内存就不归还（这一点这里没有测量，是实现行为）
+== 别名构造 ==
+通过 shared_ptr<int> 指向成员，却共享 Widget 的控制块：use_count=2
+== enable_shared_from_this 误用 ==
+栈对象上调用 shared_from_this：抛出 bad_weak_ptr（bad_weak_ptr）
+由 make_shared 创建的对象：use_count=2

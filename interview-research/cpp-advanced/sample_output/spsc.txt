@@ -1,0 +1,9 @@
+== 正确版本（release/acquire），ThreadSanitizer ==
+sum=20000100000 期望=20000100000
+== 错误版本（全部 relaxed），ThreadSanitizer（只显示报告的前几行）==
+WARNING: ThreadSanitizer: data race (pid=PID)
+  Read of size 4 at 0xADDR by thread T2:
+    #0 SpscQueue<int, 1024ul>::pop(int&) spsc.cpp:33 (spsc_bad+0x15e0) (BuildId: f0a1f1043090872bbdf701a694051bda6e251ac9)
+  Previous write of size 4 at 0xADDR by thread T1:
+    #0 SpscQueue<int, 1024ul>::push(int const&) spsc.cpp:26 (spsc_bad+0x152b) (BuildId: f0a1f1043090872bbdf701a694051bda6e251ac9)
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1022 (libtsan.so.2+0x5ac1a) (BuildId: 2a13a7710e361d06f7babbea53065ca2be93f738)

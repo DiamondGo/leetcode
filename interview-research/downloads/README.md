@@ -12,5 +12,6 @@
 | `leetcode-plan.epub` | 根据简历准备的 LeetCode 刷题清单 |
 | `ai-six-topics-knowledge.epub` | RAG、智能体、工具调用、MCP、评测、微调：知识与面试（附两个可运行实验，在 `ai-six-topics/code/`） |
 | `aws-k8s-mysql-interview.epub` | AWS、Kubernetes、MySQL：机制、取舍、排障、面试题与设计题（MySQL 部分有真实 MySQL 8.0 上的实验，在 `aws-k8s-mysql/code/`） |
+| `cpp-advanced-interview.epub` | 高级 C++ 面试：113 道深度题与答案、18 个可运行实验（在 `cpp-advanced/code/`） |
 
 这些文件由 Markdown 源文件生成。源文件有更新时，这里的文件不会自动同步，以源文件为准。

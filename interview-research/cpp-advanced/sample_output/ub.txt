@@ -1,0 +1,20 @@
+-- g++ -O0 --
+count_steps(INT_MAX - 5)           = 0
+count_steps_unsigned(UINT_MAX - 5) = 0
+-- g++ -O2 --
+count_steps(INT_MAX - 5)           = 10
+count_steps_unsigned(UINT_MAX - 5) = 0
+-- g++ -O2 -fsanitize=undefined --
+ub_optimize.cpp:9:21: runtime error: signed integer overflow: 2147483642 + 9 cannot be represented in type 'int'
+count_steps(INT_MAX - 5)           = 0
+count_steps_unsigned(UINT_MAX - 5) = 0
+-- ASan：vector 扩容后使用旧指针 --
+==PID==ERROR: AddressSanitizer: heap-use-after-free on address 0xADDR at pc 0xADDR bp 0xADDR sp 0xADDR
+READ of size 4 at 0xADDR thread T0
+    #0 0xADDR in main asan_demo.cpp:18
+freed by thread T0 here:
+    #8 0xADDR in main asan_demo.cpp:16
+previously allocated by thread T0 here:
+-- ASan：string_view 悬空 --
+==PID==ERROR: AddressSanitizer: heap-use-after-free on address 0xADDR at pc 0xADDR bp 0xADDR sp 0xADDR
+READ of size 1 at 0xADDR thread T0

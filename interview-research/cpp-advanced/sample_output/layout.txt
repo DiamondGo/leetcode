@@ -1,0 +1,20 @@
+== 填充与重排 ==
+Bad{char,double,char,int}  sizeof=24
+Good{double,int,char,char} sizeof=16
+offsetof(Bad,b)=8 offsetof(Bad,c)=16 offsetof(Bad,d)=20
+== 空类 ==
+sizeof(Empty)=1  成员为 Empty: 8  [[no_unique_address]]: 4
+alignas(64) struct: sizeof=64 alignof=64
+== 虚函数与继承 ==
+sizeof(V0)=4  sizeof(V1 有虚函数)=16  (8 字节 vptr + 4 字节 int + 4 字节对齐填充)
+sizeof(C : A, B 多重继承)=32  (两个 vptr)
+sizeof(E 菱形虚继承)=40
+== 多重继承的 this 调整 ==
+(A*)==&c ? 是；B* 比 A* 多偏移 16 字节（B 子对象在 C 对象内部，指针值不同）
+static_cast<C*>(pb)==&c ? 是（编译器减去偏移）
+== 同一动态类型共享 vtable 指针 ==
+Der1 对象甲 vptr==对象乙 vptr ? 是
+Der1 与 Der2 vptr 相同 ? 否
+Base1 与 Der2 vptr 相同 ? 否 (即使 Der2 没加成员，它也有自己的 vtable)
+== 构造期间动态类型 ==
+  P::who

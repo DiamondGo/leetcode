@@ -1,0 +1,29 @@
+== B：转发引用劫持拷贝构造 ==
+  调用了模板构造函数（实际工作中这里会 name(std::forward<T>(n))；传入 Person& 时它会编译失败）
+ Person q(p)  （p 是非 const 左值）：
+  调用了模板构造函数（实际工作中这里会 name(std::forward<T>(n))；传入 Person& 时它会编译失败）
+  调用了模板构造函数
+ PersonFixed q(p)（加了约束）：
+  调用了拷贝构造函数
+== C：unique_ptr + lambda 删除器，大小 ==
+  sizeof(FilePtr)=8（无状态删除器不占空间）
+  打开成功=1
+== D：variant + visit ==
+  string hi
+  sizeof(variant<int,string,double>)=40（= 最大成员 + 判别位 + 对齐）
+== E：expected ==
+  "123" -> 123
+  "" -> 错误码 0
+  "12a" -> 错误码 1
+  monadic：parse("20").transform(x*2) = 40
+== F：魔法静态 ==
+  Config 只构造一次
+== G：std::bit_cast 与 memcpy 做类型双关（避免严格别名违规）==
+  1.0f 的位模式：0x3f800000，memcpy 结果相同=1
+== H：pmr 单调缓冲区：用栈上缓冲代替堆 ==
+  100 个 int 放进 pmr::vector，没有触碰全局堆；capacity=128
+== I：ranges 视图是惰性的，也可能悬空 ==
+  偶数的平方：4 16 36 
+  对临时 vector 做 ranges::find 的返回类型是 std::ranges::dangling（编译期拦住了悬空迭代器）
+== J：scoped_lock 同时锁多个互斥量（避免死锁）==
+  已同时持有 m1 和 m2
