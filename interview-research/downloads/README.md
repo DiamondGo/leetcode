@@ -15,5 +15,6 @@
 | `cpp-advanced-interview.epub` | 高级 C++ 面试：113 道深度题与答案、18 个可运行实验（在 `cpp-advanced/code/`） |
 | `amazon-leadership-principles-guide.epub` | Amazon Leadership Principles 行为面试备考指南（16 条准则题库、故事清单；素材表在 `amazon-lp/lp-story-worksheet.md`） |
 | `behavioral-interview-guide.epub` | 通用行为面试备考指南：14 个通用主题、各公司侧重点、通用问题；素材表在 `behavioral/story-worksheet.md` |
+| `rag-system-design-interview.epub` | 系统设计面试：设计一个 RAG 系统（澄清问题、估算、架构、权限、评估、变体题、追问与参考答案；4 个实验在 `rag-system-design/code/`） |
 
 这些文件由 Markdown 源文件生成。源文件有更新时，这里的文件不会自动同步，以源文件为准。
